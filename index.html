@@ -149,150 +149,152 @@
     </div>
 
     <script>
-        const canvas = document.getElementById('canvas');
-        const tempCanvas = document.getElementById('tempCanvas');
-        const ctx = canvas.getContext('2d');
-        const tempCtx = tempCanvas.getContext('2d');
-        const toolBtns = document.querySelectorAll('[data-tool]');
-        const colorPicker = document.getElementById('colorPicker');
-        const sizeSlider = document.getElementById('sizeSlider');
-        const clearBtn = document.getElementById('clearBtn');
-        const saveBtn = document.getElementById('saveBtn');
-        const undoBtn = document.getElementById('undoBtn');
-        const redoBtn = document.getElementById('redoBtn');
+const canvas = document.getElementById('canvas');
+const tempCanvas = document.getElementById('tempCanvas');
+const ctx = canvas.getContext('2d');
+const tempCtx = tempCanvas.getContext('2d');
+const toolBtns = document.querySelectorAll('[data-tool]');
+const colorPicker = document.getElementById('colorPicker');
+const sizeSlider = document.getElementById('sizeSlider');
+const clearBtn = document.getElementById('clearBtn');
+const saveBtn = document.getElementById('saveBtn');
+const undoBtn = document.getElementById('undoBtn');
+const redoBtn = document.getElementById('redoBtn');
 
-        let isDrawing = false;
-        let currentTool = 'brush';
-        let lastX = 0;
-        let lastY = 0;
-        let startX = 0;
-        let startY = 0;
-        let undoStack = [];
-        let redoStack = [];
+let isDrawing = false;
+let currentTool = 'brush';
+let lastX = 0;
+let lastY = 0;
+let startX = 0;
+let startY = 0;
+let undoStack = [];
+let redoStack = [];
 
-        function resizeCanvas() {
-            const container = canvas.parentElement;
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            saveState();
+function setDrawingSettings(context) {
+    context.strokeStyle = currentTool === 'eraser' ? 'white' : colorPicker.value;
+    context.lineWidth = sizeSlider.value;
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+}
+
+function resizeCanvas() {
+    const container = canvas.parentElement;
+    canvas.width = container.clientWidth;
+    canvas.height = container.clientHeight;
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (undoStack.length === 0) {
+        saveState();
+    }
+}
+
+function saveState() {
+    undoStack.push(canvas.toDataURL());
+    redoStack = [];
+    updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+    undoBtn.disabled = undoStack.length <= 1;
+    redoBtn.disabled = redoStack.length === 0;
+}
+
+function undo() {
+    if (undoStack.length <= 1) return;
+    redoStack.push(undoStack.pop());
+    const img = new Image();
+    img.src = undoStack[undoStack.length - 1];
+    img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        updateUndoRedoButtons();
+    };
+}
+
+function redo() {
+    if (redoStack.length === 0) return;
+    const img = new Image();
+    img.src = redoStack[redoStack.length - 1];
+    img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        undoStack.push(redoStack.pop());
+        updateUndoRedoButtons();
+    };
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (currentTool === 'brush' || currentTool === 'eraser') {
+        setDrawingSettings(ctx);
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        [lastX, lastY] = [x, y];
+    } else {
+        // Clear temporary canvas and redraw shape
+        tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.beginPath();
+        setDrawingSettings(tempCtx);
+
+        switch (currentTool) {
+            case 'line':
+                tempCtx.moveTo(startX, startY);
+                tempCtx.lineTo(x, y);
+                break;
+            case 'rectangle':
+                const width = x - startX;
+                const height = y - startY;
+                tempCtx.strokeRect(startX, startY, width, height);
+                break;
+            case 'circle':
+                const radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+                tempCtx.arc(startX, startY, radius, 0, Math.PI * 2);
+                break;
         }
+        tempCtx.stroke();
+    }
+}
 
-        function saveState() {
-            undoStack.push(canvas.toDataURL());
-            redoStack = [];
-            updateUndoRedoButtons();
-        }
+function startDrawing(e) {
+    isDrawing = true;
+    const rect = canvas.getBoundingClientRect();
+    [lastX, lastY] = [e.clientX - rect.left, e.clientY - rect.top];
+    [startX, startY] = [lastX, lastY];
+}
 
-        function updateUndoRedoButtons() {
-            undoBtn.disabled = undoStack.length <= 1;
-            redoBtn.disabled = redoStack.length === 0;
-        }
+function stopDrawing() {
+    if (!isDrawing) return;
+    isDrawing = false;
 
-        function undo() {
-            if (undoStack.length <= 1) return;
-            redoStack.push(undoStack.pop());
-            const img = new Image();
-            img.src = undoStack[undoStack.length - 1];
-            img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-                updateUndoRedoButtons();
-            };
-        }
+    if (currentTool !== 'brush' && currentTool !== 'eraser') {
+        // Transfer temporary canvas content to main canvas
+        ctx.drawImage(tempCanvas, 0, 0);
+        tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+    }
+    saveState();
+}
 
-        function redo() {
-            if (redoStack.length === 0) return;
-            const img = new Image();
-            img.src = redoStack[redoStack.length - 1];
-            img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0);
-                undoStack.push(redoStack.pop());
-                updateUndoRedoButtons();
-            };
-        }
+function clearCanvas() {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    saveState();
+}
 
-        function draw(e) {
-            if (!isDrawing) return;
-
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            if (currentTool === 'brush' || currentTool === 'eraser') {
-                ctx.beginPath();
-                ctx.moveTo(lastX, lastY);
-                ctx.lineTo(x, y);
-                ctx.stroke();
-                [lastX, lastY] = [x, y];
-            } else {
-                // Clear temporary canvas and redraw shape
-                tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-                tempCtx.beginPath();
-                tempCtx.strokeStyle = currentTool === 'eraser' ? 'white' : colorPicker.value;
-                tempCtx.lineWidth = sizeSlider.value;
-                tempCtx.lineCap = 'round';
-                tempCtx.lineJoin = 'round';
-
-                switch (currentTool) {
-                    case 'line':
-                        tempCtx.moveTo(startX, startY);
-                        tempCtx.lineTo(x, y);
-                        break;
-                    case 'rectangle':
-                        const width = x - startX;
-                        const height = y - startY;
-                        tempCtx.strokeRect(startX, startY, width, height);
-                        break;
-                    case 'circle':
-                        const radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
-                        tempCtx.arc(startX, startY, radius, 0, Math.PI * 2);
-                        break;
-                }
-                tempCtx.stroke();
-            }
-        }
-
-        function startDrawing(e) {
-            isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            [lastX, lastY] = [e.clientX - rect.left, e.clientY - rect.top];
-            [startX, startY] = [lastX, lastY];
-
-            ctx.strokeStyle = currentTool === 'eraser' ? 'white' : colorPicker.value;
-            ctx.lineWidth = sizeSlider.value;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-        }
-
-        function stopDrawing() {
-            if (!isDrawing) return;
-            isDrawing = false;
-
-            if (currentTool !== 'brush' && currentTool !== 'eraser') {
-                // Transfer temporary canvas content to main canvas
-                ctx.drawImage(tempCanvas, 0, 0);
-                tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-            }
-            saveState();
-        }
-
-        function clearCanvas() {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            saveState();
-        }
-
-        function saveCanvas() {
-            const link = document.createElement('a');
-            link.download = 'sketch.png';
-            link.href = canvas.toDataURL();
-            link.click();
-        }
+function saveCanvas() {
+    const link = document.createElement('a');
+    link.download = 'sketch.png';
+    link.href = canvas.toDataURL();
+    link.click();
+}
 
         // Event Listeners
         window.addEventListener('resize', resizeCanvas);

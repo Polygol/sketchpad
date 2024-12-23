@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sketchpad</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #1c1c1c;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background-color: transparent;
+            border: 2px solid #666666;
+            border-radius: 25px;
+            flex-wrap: wrap;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .divider {
+            width: 2px;
+            height: 30px;
+            background-color: #666666;
+            margin: 0 10px;
+        }
+
+        .tool-btn {
+            background-color: #666666;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .tool-btn:hover, .tool-btn.active {
+            background-color: #bdd6ff;
+            color: #1c1c1c;
+        }
+
+        .color-picker {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            background-color: #666666;
+        }
+
+        .size-slider {
+            width: 100px;
+            height: 5px;
+            -webkit-appearance: none;
+            background: #666666;
+            border-radius: 25px;
+            outline: none;
+        }
+
+        .size-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #bdd6ff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .canvas-container {
+            flex-grow: 1;
+            position: relative;
+            border: 2px solid #666666;
+            border-radius: 25px;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <div class="tool-group">
+            <button class="tool-btn active" data-tool="brush">✏️ Brush</button>
+            <button class="tool-btn" data-tool="eraser">🧽 Eraser</button>
+        </div>
+        <div class="divider"></div>
+        <div class="tool-group">
+            <input type="color" class="color-picker" id="colorPicker" value="#000000">
+            <input type="range" class="size-slider" id="sizeSlider" min="1" max="50" value="5">
+        </div>
+        <div class="divider"></div>
+        <div class="tool-group">
+            <button class="tool-btn" id="clearBtn">🗑️ Clear</button>
+            <button class="tool-btn" id="saveBtn">💾 Save</button>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const toolBtns = document.querySelectorAll('[data-tool]');
+        const colorPicker = document.getElementById('colorPicker');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const clearBtn = document.getElementById('clearBtn');
+        const saveBtn = document.getElementById('saveBtn');
+
+        let isDrawing = false;
+        let currentTool = 'brush';
+        let lastX = 0;
+        let lastY = 0;
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            [lastX, lastY] = [x, y];
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            [lastX, lastY] = [e.clientX - rect.left, e.clientY - rect.top];
+
+            ctx.strokeStyle = currentTool === 'eraser' ? 'white' : colorPicker.value;
+            ctx.lineWidth = sizeSlider.value;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function saveCanvas() {
+            const link = document.createElement('a');
+            link.download = 'sketch.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Event Listeners
+        window.addEventListener('resize', resizeCanvas);
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        toolBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                toolBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+            });
+        });
+
+        colorPicker.addEventListener('change', () => {
+            if (currentTool === 'brush') {
+                ctx.strokeStyle = colorPicker.value;
+            }
+        });
+
+        sizeSlider.addEventListener('input', () => {
+            ctx.lineWidth = sizeSlider.value;
+        });
+
+        clearBtn.addEventListener('click', clearCanvas);
+        saveBtn.addEventListener('click', saveCanvas);
+
+        // Initialize
+        resizeCanvas();
+    </script>
+</body>
+</html>

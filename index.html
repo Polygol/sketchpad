@@ -93,25 +93,25 @@
             cursor: pointer;
         }
 
-        .canvas-container {
-            flex-grow: 1;
-            position: relative;
-            border: 2px solid #666666;
-            border-radius: 25px;
-            overflow: hidden;
-        }
+.canvas-container {
+    flex-grow: 1;
+    position: relative;
+    border: 2px solid #666666;
+    border-radius: 25px;
+    overflow: hidden;
+    background-color: white;
+}
 
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            cursor: crosshair;
-            background-color: white;
-        }
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: crosshair;
+}
 
-        #tempCanvas {
-            pointer-events: none;
-        }
+#tempCanvas {
+    z-index: 1;  /* Make sure temp canvas is on top */
+}
     </style>
 </head>
 <body>
@@ -149,10 +149,13 @@
     </div>
 
     <script>
+// Canvas setup
 const canvas = document.getElementById('canvas');
 const tempCanvas = document.getElementById('tempCanvas');
-const ctx = canvas.getContext('2d');
-const tempCtx = tempCanvas.getContext('2d');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+
+// UI elements
 const toolBtns = document.querySelectorAll('[data-tool]');
 const colorPicker = document.getElementById('colorPicker');
 const sizeSlider = document.getElementById('sizeSlider');
@@ -161,6 +164,7 @@ const saveBtn = document.getElementById('saveBtn');
 const undoBtn = document.getElementById('undoBtn');
 const redoBtn = document.getElementById('redoBtn');
 
+// State variables
 let isDrawing = false;
 let currentTool = 'brush';
 let lastX = 0;
@@ -170,80 +174,47 @@ let startY = 0;
 let undoStack = [];
 let redoStack = [];
 
-function setDrawingSettings(context) {
-    context.strokeStyle = currentTool === 'eraser' ? 'white' : colorPicker.value;
-    context.lineWidth = sizeSlider.value;
-    context.lineCap = 'round';
-    context.lineJoin = 'round';
-}
-
 function resizeCanvas() {
     const container = canvas.parentElement;
     canvas.width = container.clientWidth;
     canvas.height = container.clientHeight;
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
+    tempCanvas.width = container.clientWidth;
+    tempCanvas.height = container.clientHeight;
+    
+    // Set initial white background
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
     if (undoStack.length === 0) {
         saveState();
     }
 }
 
-function saveState() {
-    undoStack.push(canvas.toDataURL());
-    redoStack = [];
-    updateUndoRedoButtons();
-}
-
-function updateUndoRedoButtons() {
-    undoBtn.disabled = undoStack.length <= 1;
-    redoBtn.disabled = redoStack.length === 0;
-}
-
-function undo() {
-    if (undoStack.length <= 1) return;
-    redoStack.push(undoStack.pop());
-    const img = new Image();
-    img.src = undoStack[undoStack.length - 1];
-    img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        updateUndoRedoButtons();
-    };
-}
-
-function redo() {
-    if (redoStack.length === 0) return;
-    const img = new Image();
-    img.src = redoStack[redoStack.length - 1];
-    img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        undoStack.push(redoStack.pop());
-        updateUndoRedoButtons();
-    };
-}
-
 function draw(e) {
     if (!isDrawing) return;
 
-    const rect = canvas.getBoundingClientRect();
+    const rect = tempCanvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+
     if (currentTool === 'brush' || currentTool === 'eraser') {
-        setDrawingSettings(ctx);
         ctx.beginPath();
+        ctx.strokeStyle = currentTool === 'eraser' ? 'white' : colorPicker.value;
+        ctx.lineWidth = sizeSlider.value;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
         ctx.moveTo(lastX, lastY);
         ctx.lineTo(x, y);
         ctx.stroke();
         [lastX, lastY] = [x, y];
     } else {
-        // Clear temporary canvas and redraw shape
-        tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
         tempCtx.beginPath();
-        setDrawingSettings(tempCtx);
+        tempCtx.strokeStyle = colorPicker.value;
+        tempCtx.lineWidth = sizeSlider.value;
+        tempCtx.lineCap = 'round';
+        tempCtx.lineJoin = 'round';
 
         switch (currentTool) {
             case 'line':
@@ -266,9 +237,11 @@ function draw(e) {
 
 function startDrawing(e) {
     isDrawing = true;
-    const rect = canvas.getBoundingClientRect();
-    [lastX, lastY] = [e.clientX - rect.left, e.clientY - rect.top];
-    [startX, startY] = [lastX, lastY];
+    const rect = tempCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    [lastX, lastY] = [x, y];
+    [startX, startY] = [x, y];
 }
 
 function stopDrawing() {
@@ -276,58 +249,80 @@ function stopDrawing() {
     isDrawing = false;
 
     if (currentTool !== 'brush' && currentTool !== 'eraser') {
-        // Transfer temporary canvas content to main canvas
         ctx.drawImage(tempCanvas, 0, 0);
         tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
     }
     saveState();
 }
 
+function saveState() {
+    undoStack.push(canvas.toDataURL());
+    redoStack = [];
+    updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+    undoBtn.disabled = undoStack.length <= 1;
+    redoBtn.disabled = redoStack.length === 0;
+}
+
+function undo() {
+    if (undoStack.length <= 1) return;
+    redoStack.push(undoStack.pop());
+    loadState(undoStack[undoStack.length - 1]);
+}
+
+function redo() {
+    if (redoStack.length === 0) return;
+    const state = redoStack.pop();
+    undoStack.push(state);
+    loadState(state);
+}
+
+function loadState(state) {
+    const img = new Image();
+    img.src = state;
+    img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        updateUndoRedoButtons();
+    };
+}
+
 function clearCanvas() {
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
     saveState();
 }
 
-function saveCanvas() {
+// Event Listeners
+window.addEventListener('resize', resizeCanvas);
+tempCanvas.addEventListener('mousedown', startDrawing);
+tempCanvas.addEventListener('mousemove', draw);
+tempCanvas.addEventListener('mouseup', stopDrawing);
+tempCanvas.addEventListener('mouseout', stopDrawing);
+
+toolBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        toolBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTool = btn.dataset.tool;
+    });
+});
+
+clearBtn.addEventListener('click', clearCanvas);
+saveBtn.addEventListener('click', () => {
     const link = document.createElement('a');
     link.download = 'sketch.png';
     link.href = canvas.toDataURL();
     link.click();
-}
+});
+undoBtn.addEventListener('click', undo);
+redoBtn.addEventListener('click', redo);
 
-        // Event Listeners
-        window.addEventListener('resize', resizeCanvas);
-        canvas.addEventListener('mousedown', startDrawing);
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', stopDrawing);
-        canvas.addEventListener('mouseout', stopDrawing);
-
-        toolBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                toolBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentTool = btn.dataset.tool;
-            });
-        });
-
-        colorPicker.addEventListener('change', () => {
-            if (currentTool !== 'eraser') {
-                ctx.strokeStyle = colorPicker.value;
-            }
-        });
-
-        sizeSlider.addEventListener('input', () => {
-            ctx.lineWidth = sizeSlider.value;
-        });
-
-        clearBtn.addEventListener('click', clearCanvas);
-        saveBtn.addEventListener('click', saveCanvas);
-        undoBtn.addEventListener('click', undo);
-        redoBtn.addEventListener('click', redo);
-
-        // Initialize
-        resizeCanvas();
+// Initialize
+resizeCanvas();
     </script>
 </body>
 </html>

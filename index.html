@@ -62,12 +62,10 @@
         }
 
         body {
-            background-color: #1c1c1c;
+            background-color: var(--background-color);
             min-height: 100vh;
-            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
         }
 
         .toolbar {
@@ -75,9 +73,11 @@
             gap: 10px;
             padding: 15px 20px;
             background-color: transparent;
-            border: 2px solid #666666;
-            border-radius: 25px;
+            border-bottom: 1px solid var(--glass-border);
+            border-radius: 0;
             flex-wrap: wrap;
+            height: 80px;
+            backdrop-filter: blur(10px);
         }
 
         .tool-group {
@@ -86,26 +86,19 @@
             align-items: center;
         }
 
-        .divider {
-            width: 2px;
-            height: 30px;
-            background-color: #666666;
-            margin: 0 10px;
-        }
-
         .tool-btn {
-            background-color: #666666;
-            color: white;
-            border: none;
+            background-color: var(--search-background);
+            color: var(--text-color);
+            border: 1px solid var(--glass-border);
             border-radius: 25px;
             padding: 8px 15px;
             cursor: pointer;
             transition: background-color 0.2s;
         }
 
-        .tool-btn:hover, .tool-btn.active {
-            background-color: #bdd6ff;
-            color: #1c1c1c;
+        .tool-btn.active {
+            background-color: var(--text-color);
+            color: var(--background-color);
         }
 
         .tool-btn:disabled {
@@ -144,8 +137,8 @@
 .canvas-container {
     flex-grow: 1;
     position: relative;
-    border: 2px solid #666666;
-    border-radius: 25px;
+    border: none;
+    border-radius: 0;
     overflow: hidden;
     background-color: white;
 }
@@ -168,23 +161,19 @@ canvas {
             <button class="tool-btn active" data-tool="brush">✏️ Brush</button>
             <button class="tool-btn" data-tool="eraser">🧽 Eraser</button>
         </div>
-        <div class="divider"></div>
         <div class="tool-group">
             <button class="tool-btn" data-tool="line">📏 Line</button>
             <button class="tool-btn" data-tool="rectangle">⬜ Rectangle</button>
             <button class="tool-btn" data-tool="circle">⭕ Circle</button>
         </div>
-        <div class="divider"></div>
         <div class="tool-group">
             <input type="color" class="color-picker" id="colorPicker" value="#000000">
             <input type="range" class="size-slider" id="sizeSlider" min="1" max="50" value="5">
         </div>
-        <div class="divider"></div>
         <div class="tool-group">
             <button class="tool-btn" id="undoBtn" disabled>↩️ Undo</button>
             <button class="tool-btn" id="redoBtn" disabled>↪️ Redo</button>
         </div>
-        <div class="divider"></div>
         <div class="tool-group">
             <button class="tool-btn" id="clearBtn">🗑️ Clear</button>
             <button class="tool-btn" id="saveBtn">💾 Save</button>

@@ -107,6 +107,20 @@
             opacity: 0.5;
         }
 
+        input[type="color"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 35px;
+            height: 35px;
+            border: 1px solid var(--glass-border);
+            border-radius: 35px;
+            cursor: pointer;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
         .color-picker {
             -webkit-appearance: none;
             appearance: none;
@@ -134,12 +148,18 @@
 
         .size-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 15px;
-            height: 15px;
+            width: 18px;
+            height: 18px;
             background: var(--text-color);
             border-radius: 50%;
             cursor: pointer;
             border: 1px solid var(--glass-border);
+        }
+
+        .size-slider::-webkit-slider-thumb:active {
+            width: 24px;
+            height: 24px;
+            transform: scale(1.1);
         }
 
 .canvas-container {

@@ -6,6 +6,7 @@
     <title>SketchPad</title>
     <link rel="icon" href="favicon.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="/assets/gurapp/api/gurasuraisu-api.js" defer></script>
     <style>
         :root {
             /* Dark Theme (Default) Variables */
@@ -400,33 +401,6 @@ saveBtn.addEventListener('click', () => {
 });
 undoBtn.addEventListener('click', undo);
 redoBtn.addEventListener('click', redo);
-
-        // Theme synchronization for Gurapp side
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initial theme application based on localStorage
-            const storedTheme = localStorage.getItem('theme') || 'dark';
-            document.body.classList.toggle('light-theme', storedTheme === 'light');
-            
-            // Initial animation preference application
-            const animationsEnabled = localStorage.getItem('animationsEnabled') !== 'false';
-            document.body.classList.toggle('reduce-animations', !animationsEnabled);
-            
-            // Set up listener for theme change messages
-            window.addEventListener('message', (event) => {
-                // Verify message origin and type for security
-                if (event.origin === window.location.origin) {
-                    if (event.data.type === 'themeUpdate') {
-                        const newTheme = event.data.theme;
-                        document.body.classList.toggle('light-theme', newTheme === 'light');
-                        console.log('App theme updated via message to:', newTheme);
-                    } else if (event.data.type === 'animationsUpdate') {
-                        const enableAnimations = event.data.enabled;
-                        document.body.classList.toggle('reduce-animations', !enableAnimations);
-                        console.log('App animations updated via message to:', enableAnimations ? 'enabled' : 'disabled');
-                    }
-                }
-            });
-        });
 
 // Initialize
 resizeCanvas();

@@ -116,8 +116,10 @@
             border-radius: 25px;
             padding: 8px 15px;
             cursor: pointer;
-            height: 35px
+            height: 40px;
+            box-shadow: var(--sun-shadow);
             transition: background-color 0.2s;
+            backdrop-filter: blur(5px) saturate(2) var(--edge-refraction-filter);
         }
 
         .tool-btn.active {
@@ -134,29 +136,20 @@
         input[type="color"] {
             -webkit-appearance: none;
             appearance: none;
-            width: 35px;
-            height: 35px;
-            border: 1px solid var(--glass-border);
-            border-radius: 35px;
-            cursor: pointer;
-            padding: 0;
-            background: none;
-            cursor: pointer;
-            overflow: hidden;
         }
 
         .color-picker {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 35px;
-            height: 35px;
+            width: 40px;
+            height: 40px;
             border: 1px solid var(--glass-border);
-            border-radius: 35px;
+            border-radius: 40px;
             cursor: pointer;
             padding: 0;
             background: none;
             cursor: pointer;
             overflow: hidden;
+            box-shadow: var(--sun-shadow);
+            backdrop-filter: blur(5px) saturate(2) var(--edge-refraction-filter);
         }
 
         .size-slider {
@@ -168,6 +161,8 @@
             outline: none;
             border: 1px solid var(--glass-border);
             padding: 0 9px;
+            box-shadow: var(--sun-shadow);
+            backdrop-filter: blur(5px) saturate(2) var(--edge-refraction-filter);
         }
 
         .size-slider::-webkit-slider-thumb {

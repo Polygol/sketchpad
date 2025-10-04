@@ -118,12 +118,13 @@
             height: 40px;
             box-shadow: var(--sun-shadow);
             transition: background-color 0.2s;
-            backdrop-filter: blur(5px) saturate(2) var(--edge-refraction-filter);
+            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
         }
 
         .tool-btn.active {
             background-color: var(--text-color);
             color: var(--background-color);
+            border-radius: 15px;
         }
 
         .tool-btn:disabled {
@@ -148,7 +149,7 @@
             cursor: pointer;
             overflow: hidden;
             box-shadow: var(--sun-shadow);
-            backdrop-filter: blur(5px) saturate(2) var(--edge-refraction-filter);
+            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
         }
 
         .size-slider {
@@ -161,7 +162,7 @@
             border: 1px solid var(--glass-border);
             padding: 0 9px;
             box-shadow: var(--sun-shadow);
-            backdrop-filter: blur(5px) saturate(2) var(--edge-refraction-filter);
+            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
         }
 
         .size-slider::-webkit-slider-thumb {
@@ -225,10 +226,10 @@ canvas {
         
             <!-- Part 5: Apply the displacement twice and combine the results. -->
             <!-- Pass 1: A positive scale refracts the top and left edges inward correctly. -->
-            <feDisplacementMap in="SourceGraphic" in2="displacement_map" scale="30" xChannelSelector="R" yChannelSelector="G" result="disp_positive"></feDisplacementMap>
+            <feDisplacementMap in="SourceGraphic" in2="displacement_map" scale="15" xChannelSelector="R" yChannelSelector="G" result="disp_positive"></feDisplacementMap>
             
             <!-- Pass 2: A negative scale refracts the bottom and right edges inward correctly. -->
-            <feDisplacementMap in="SourceGraphic" in2="displacement_map" scale="-30" xChannelSelector="R" yChannelSelector="G" result="disp_negative"></feDisplacementMap>
+            <feDisplacementMap in="SourceGraphic" in2="displacement_map" scale="-15" xChannelSelector="R" yChannelSelector="G" result="disp_negative"></feDisplacementMap>
             
             <!-- Part 6: Blend the two results. The 'lighten' mode takes the non-transparent pixels
                  from both passes. Since the "incorrect" refractions are pushed into transparent

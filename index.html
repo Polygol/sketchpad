@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>SketchPad</title>
-    <link rel="icon" href="favicon.png" type="image/png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <script src="/assets/gurapp/api/gurasuraisu-api.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="icon" type="image/png" href="/assets/gurapp/icons/draw.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,700,1,0">
+    <!-- Gurasuraisu API for Polygol Integration -->
+    <script src="/assets/gurapp/api/gurasuraisu-api.js"></script>
+    <!-- Fabric.js for Canvas Functionality -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <style>
+        /* Inherited Color and Style Variables for Consistency */
         :root {
             --edge-refraction-filter: url('#edge-refraction-only');
             --sun-shadow: 0 0 0 0 transparent;
@@ -62,7 +65,8 @@
             --transparent-color: var(--light-transparent);
             --glass-border: var(--glass-border-light);
         }
-        
+
+        /* Base Body and Layout Styles */
         * {
             margin: 0;
             padding: 0;
@@ -72,378 +76,419 @@
         }
 
         body {
-            background-color: var(--background-color-tr);
+            background-color: var(--background-color);
+            color: var(--text-color);
             min-height: 100vh;
             display: flex;
+            user-select: none;
+            overflow: hidden;
             flex-direction: column;
         }
 
-        body::-webkit-scrollbar, .modal-content::-webkit-scrollbar {
-            width: 8px; /* Thin scrollbar */
+        .main-container {
+            display: grid;
+            grid-template-columns: 60px 1fr 280px;
+            grid-template-rows: 50px 1fr;
+            grid-template-areas: 
+                "tools options panels"
+                "tools canvas  panels";
+            height: 100vh;
+            gap: 8px;
+            padding: 8px;
         }
 
-        body::-webkit-scrollbar-track, .modal-content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        body::-webkit-scrollbar-thumb, .modal-content::-webkit-scrollbar-thumb {
-            background-color: var(--search-background);
-            border-radius: 50px;
-        }
-
+        /* Toolbars and Panels Styling */
         .toolbar {
-            display: flex;
-            gap: 10px;
-            padding: 15px 115px 15px 26px;
-            background-color: transparent;
-            border-bottom: 1px solid var(--glass-border);
-            border-radius: 0;
-            flex-wrap: wrap;
-            min-height: 80px;
-        }
-
-        .tool-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .tool-btn {
             background-color: var(--search-background);
-            color: var(--text-color);
             border: 1px solid var(--glass-border);
-            border-radius: 25px;
-            padding: 8px 15px;
-            cursor: pointer;
-            height: 40px;
-            box-shadow: var(--sun-shadow);
-            transition: background-color 0.2s;
+            border-radius: 35px;
+            corner-shape: superellipse(1.5);
             backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
+            box-shadow: var(--sun-shadow);
+            display: flex;
+            align-items: center;
+            padding: 8px;
+        }
+
+        #tool-bar {
+            grid-area: tools;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 8px;
+        }
+
+        #options-bar {
+            grid-area: options;
+            gap: 12px;
+            padding: 8px 15px;
+        }
+
+        #panels-container {
+            grid-area: panels;
+            flex-direction: column;
+            gap: 8px;
+            overflow: hidden;
+        }
+
+        .canvas-wrapper {
+            grid-area: canvas;
+            background-color: var(--background-color-dark); /* A slightly different bg for contrast */
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        #main-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Tool and Panel UI Elements */
+        .tool-btn {
+            background: none;
+            border: none;
+            color: var(--secondary-text-color);
+            width: 44px;
+            height: 44px;
+            border-radius: 18px;
+            corner-shape: superellipse(1.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tool-btn:hover {
+            background-color: var(--dark-transparent);
         }
 
         .tool-btn.active {
-            background-color: var(--text-color);
+            background-color: var(--secondary-text-color);
             color: var(--background-color);
-            border-radius: 15px;
         }
 
-        .tool-btn:disabled {
-            background-color: var(--overlay-color);
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
-
-        input[type="color"] {
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        .color-picker {
-            width: 40px;
-            height: 40px;
+        .panel {
+            background-color: var(--search-background);
             border: 1px solid var(--glass-border);
-            border-radius: 40px;
-            cursor: pointer;
-            padding: 0;
-            background: none;
-            cursor: pointer;
-            overflow: hidden;
-            box-shadow: var(--sun-shadow);
-            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
-        }
-
-        .size-slider {
-            width: 100px;
-            height: 35px;
-            -webkit-appearance: none;
-            background: var(--search-background);
             border-radius: 25px;
-            outline: none;
-            border: 1px solid var(--glass-border);
-            padding: 0 9px;
-            box-shadow: var(--sun-shadow);
+            corner-shape: superellipse(1.5);
             backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
+            box-shadow: var(--sun-shadow);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .size-slider::-webkit-slider-thumb {
+        .panel-header {
+            font-family: 'Open Runde', sans-serif;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        /* Layer Specific Styles */
+        #layers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            overflow-y: auto;
+            max-height: 200px; /* Example height */
+        }
+        
+        .layer-item {
+            background-color: var(--dark-transparent);
+            padding: 8px 12px;
+            border-radius: 12px;
+            corner-shape: superellipse(1.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .layer-item.active {
+            background-color: var(--secondary-text-color);
+            color: var(--background-color);
+        }
+
+        .layer-name { flex-grow: 1; }
+
+        /* Generic UI Controls */
+        .options-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .options-group label {
+            font-size: 14px;
+            color: var(--secondary-text-color);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            flex-grow: 1;
+            height: 5px;
+            background: var(--dark-transparent);
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             width: 18px;
             height: 18px;
             background: var(--text-color);
             border-radius: 50%;
             cursor: pointer;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            background-color: var(--dark-transparent);
             border: 1px solid var(--glass-border);
+            color: var(--text-color);
+            border-radius: 8px;
+            padding: 5px;
+            text-align: center;
         }
 
-        .size-slider::-webkit-slider-thumb:active {
-            width: 24px;
-            height: 24px;
-            transform: scale(1.1);
+        .material-symbols-rounded {
+          font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 24;
+          vertical-align: middle;
         }
-
-.canvas-container {
-    flex-grow: 1;
-    position: relative;
-    border: none;
-    border-radius: 0;
-    overflow: hidden;
-    background-color: white;
-}
-
-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    cursor: crosshair;
-}
-
-#tempCanvas {
-    z-index: 1;  /* Make sure temp canvas is on top */
-}
     </style>
 </head>
-<body>
+<body data-app-name="SKETCHPAD">
+    
+    <!-- Complex SVG Filters for Glass Effect -->
     <svg style="display: none">
         <filter id="edge-refraction-only" color-interpolation-filters="linearRGB">
-            <!-- Part 1: Generate the edge turbulence pattern -->
             <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" result="turbulence"></feTurbulence>
             <feMorphology in="SourceGraphic" operator="erode" radius="4" result="eroded"></feMorphology>
             <feComposite in="SourceGraphic" in2="eroded" operator="out" result="border_mask"></feComposite>
             <feComposite in="turbulence" in2="border_mask" operator="in" result="edge_turbulence"></feComposite>
-    
-            <!-- Part 2: Create the two displacement passes -->
             <feDisplacementMap in="SourceGraphic" in2="edge_turbulence" scale="15" xChannelSelector="R" yChannelSelector="G" result="disp_positive"></feDisplacementMap>
             <feDisplacementMap in="SourceGraphic" in2="edge_turbulence" scale="-15" xChannelSelector="R" yChannelSelector="G" result="disp_negative"></feDisplacementMap>
-    
-            <!-- Part 3: Create masks to isolate the correct halves of each pass -->
-            <!-- Mask for the Top-Left Half -->
             <feFlood flood-color="white" width="50%" height="50%" x="0" y="0" result="topLeftRect"></feFlood>
-            <!-- Mask for the Bottom-Right Half -->
             <feFlood flood-color="white" width="50%" height="50%" x="50%" y="50%" result="bottomRightRect"></feFlood>
-    
-            <!-- Part 4: Apply the masks -->
-            <!-- Isolate the correctly refracted top-left from the positive pass -->
             <feComposite in="disp_positive" in2="topLeftRect" operator="in" result="topLeft_part"></feComposite>
-            <!-- Isolate the correctly refracted bottom-right from the negative pass -->
             <feComposite in="disp_negative" in2="bottomRightRect" operator="in" result="bottomRight_part"></feComposite>
-    
-            <!-- 
-               Part 5: Merge the perfectly isolated parts.
-               Because there is no overlap, 'lighten' works perfectly, but you could also use feMerge.
-            -->
             <feBlend in="topLeft_part" in2="bottomRight_part" mode="lighten" result="blended_image"></feBlend>
-            
-            <!-- Part 6: Adjust final opacity -->
             <feComponentTransfer in="blended_image">
                 <feFuncA type="linear" slope="0.95"></feFuncA>
             </feComponentTransfer>
         </filter>
     </svg>
-    
-    <div class="toolbar">
-        <div class="tool-group">
-            <button class="tool-btn active" data-tool="brush">✏️</button>
-            <button class="tool-btn" data-tool="eraser">🧽</button>
-        </div>
-        <div class="tool-group">
-            <button class="tool-btn" data-tool="line">📏</button>
-            <button class="tool-btn" data-tool="rectangle">⬜</button>
-            <button class="tool-btn" data-tool="circle">⭕</button>
-        </div>
-        <div class="tool-group">
-            <input type="color" class="color-picker" id="colorPicker" value="#000000">
-            <input type="range" class="size-slider" id="sizeSlider" min="1" max="50" value="5">
-        </div>
-        <div class="tool-group">
-            <button class="tool-btn" id="undoBtn" disabled>↩️</button>
-            <button class="tool-btn" id="redoBtn" disabled>↪️</button>
-        </div>
-        <div class="tool-group">
-            <button class="tool-btn" id="clearBtn">🗑️</button>
-            <button class="tool-btn" id="saveBtn">💾</button>
-        </div>
-    </div>
 
-    <div class="canvas-container">
-        <canvas id="canvas"></canvas>
-        <canvas id="tempCanvas"></canvas>
+    <!-- Main Application Layout -->
+    <div class="main-container">
+
+        <!-- Left Vertical Tool Bar -->
+        <div id="tool-bar" class="toolbar">
+            <button class="tool-btn active" data-tool="select" title="Select & Transform"><span class="material-symbols-rounded">pan_tool</span></button>
+            <button class="tool-btn" data-tool="brush" title="Brush"><span class="material-symbols-rounded">brush</span></button>
+            <button class="tool-btn" data-tool="eraser" title="Eraser"><span class="material-symbols-rounded">ink_eraser</span></button>
+            <button class="tool-btn" data-tool="shape" title="Shapes"><span class="material-symbols-rounded">shapes</span></button>
+            <button class="tool-btn" data-tool="text" title="Text"><span class="material-symbols-rounded">title</span></button>
+            <button class="tool-btn" data-tool="fill" title="Fill"><span class="material-symbols-rounded">format_color_fill</span></button>
+            <button class="tool-btn" data-tool="eyedropper" title="Eyedropper"><span class="material-symbols-rounded">colorize</span></button>
+        </div>
+
+        <!-- Top Horizontal Options Bar (Contextual) -->
+        <div id="options-bar" class="toolbar">
+            <div class="options-group" id="brush-options">
+                <label for="brush-size">Size:</label>
+                <input type="range" id="brush-size" min="1" max="100" value="10">
+                <input type="number" id="brush-size-val" min="1" max="100" value="10">
+                <label for="brush-color">Color:</label>
+                <input type="color" id="brush-color" value="#ffffff">
+            </div>
+             <div class="options-group" id="text-options" style="display:none;">
+                <label>Font:</label>
+                <select id="font-family">
+                    <option>Arial</option>
+                    <option>Open Runde</option>
+                    <option>Inter</option>
+                    <option>Verdana</option>
+                </select>
+                <label for="font-size">Size:</label>
+                <input type="number" id="font-size" min="1" max="500" value="40">
+            </div>
+        </div>
+
+        <!-- Main Canvas Area -->
+        <div class="canvas-wrapper">
+            <canvas id="main-canvas"></canvas>
+        </div>
+
+        <!-- Right Panels Container -->
+        <div id="panels-container" class="toolbar">
+            <div id="layers-panel" class="panel" style="flex-grow: 1;">
+                <div class="panel-header">Layers</div>
+                <div id="layers-list">
+                    <!-- Layer items will be dynamically inserted here -->
+                </div>
+                <div class="panel-actions" style="display:flex; gap: 8px; margin-top: auto;">
+                    <button id="add-layer-btn" class="tool-btn" title="Add Layer"><span class="material-symbols-rounded">add_box</span></button>
+                    <button id="remove-layer-btn" class="tool-btn" title="Remove Layer"><span class="material-symbols-rounded">delete</span></button>
+                </div>
+            </div>
+            <div id="history-panel" class="panel">
+                <div class="panel-header">History</div>
+                <div class="panel-actions" style="display:flex; gap: 8px;">
+                     <button id="undo-btn" class="tool-btn" title="Undo"><span class="material-symbols-rounded">undo</span></button>
+                     <button id="redo-btn" class="tool-btn" title="Redo"><span class="material-symbols-rounded">redo</span></button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-// Canvas setup
-const canvas = document.getElementById('canvas');
-const tempCanvas = document.getElementById('tempCanvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
-const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvasWrapper = document.querySelector('.canvas-wrapper');
+            const canvasEl = document.getElementById('main-canvas');
+            
+            // Initialize Fabric.js Canvas
+            const fabricCanvas = new fabric.Canvas(canvasEl, {
+                width: canvasWrapper.clientWidth,
+                height: canvasWrapper.clientHeight,
+                backgroundColor: '#333333',
+                isDrawingMode: false,
+                selection: true
+            });
 
-// UI elements
-const toolBtns = document.querySelectorAll('[data-tool]');
-const colorPicker = document.getElementById('colorPicker');
-const sizeSlider = document.getElementById('sizeSlider');
-const clearBtn = document.getElementById('clearBtn');
-const saveBtn = document.getElementById('saveBtn');
-const undoBtn = document.getElementById('undoBtn');
-const redoBtn = document.getElementById('redoBtn');
+            // --- State Management ---
+            let activeTool = 'select';
+            let history = [];
+            let historyIndex = -1;
+            const MAX_HISTORY = 50;
 
-// State variables
-let isDrawing = false;
-let currentTool = 'brush';
-let lastX = 0;
-let lastY = 0;
-let startX = 0;
-let startY = 0;
-let undoStack = [];
-let redoStack = [];
+            // --- UI Elements ---
+            const toolBtns = document.querySelectorAll('.tool-btn[data-tool]');
+            const brushSizeSlider = document.getElementById('brush-size');
+            const brushSizeValue = document.getElementById('brush-size-val');
+            const brushColorPicker = document.getElementById('brush-color');
+            const addLayerBtn = document.getElementById('add-layer-btn');
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
 
-function resizeCanvas() {
-    const container = canvas.parentElement;
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
-    tempCanvas.width = container.clientWidth;
-    tempCanvas.height = container.clientHeight;
-    
-    // Set initial white background
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    if (undoStack.length === 0) {
-        saveState();
-    }
-}
+            // --- Tool Switching Logic ---
+            function setTool(tool) {
+                activeTool = tool;
+                fabricCanvas.isDrawingMode = (activeTool === 'brush' || activeTool === 'eraser');
+                
+                toolBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tool === tool));
 
-function draw(e) {
-    if (!isDrawing) return;
+                // Update brush for eraser
+                if(activeTool === 'eraser'){
+                    fabricCanvas.freeDrawingBrush = new fabric.EraserBrush(fabricCanvas);
+                    fabricCanvas.freeDrawingBrush.width = parseInt(brushSizeSlider.value, 10);
+                } else {
+                    fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+                    fabricCanvas.freeDrawingBrush.width = parseInt(brushSizeSlider.value, 10);
+                    fabricCanvas.freeDrawingBrush.color = brushColorPicker.value;
+                }
+            }
 
-    const rect = tempCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+            toolBtns.forEach(btn => {
+                btn.addEventListener('click', () => setTool(btn.dataset.tool));
+            });
+            
+            // --- Brush/Eraser Options ---
+            function updateBrushSize() {
+                const size = parseInt(this.value, 10);
+                brushSizeSlider.value = size;
+                brushSizeValue.value = size;
+                if (fabricCanvas.freeDrawingBrush) {
+                    fabricCanvas.freeDrawingBrush.width = size;
+                }
+            }
+            brushSizeSlider.addEventListener('input', updateBrushSize);
+            brushSizeValue.addEventListener('input', updateBrushSize);
+            
+            brushColorPicker.addEventListener('input', () => {
+                if (fabricCanvas.freeDrawingBrush) {
+                    fabricCanvas.freeDrawingBrush.color = brushColorPicker.value;
+                }
+            });
 
-    tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+            // --- Shape & Text Tools ---
+            function addShape() {
+                const rect = new fabric.Rect({
+                    left: 100,
+                    top: 100,
+                    fill: brushColorPicker.value,
+                    width: 150,
+                    height: 100,
+                    strokeWidth: 2,
+                    stroke: '#ffffff'
+                });
+                fabricCanvas.add(rect);
+            }
+            
+            function addText() {
+                const text = new fabric.IText('Your Text Here', {
+                    left: 100,
+                    top: 150,
+                    fontFamily: 'Open Runde',
+                    fill: brushColorPicker.value,
+                    fontSize: 40
+                });
+                fabricCanvas.add(text);
+                fabricCanvas.setActiveObject(text);
+            }
+            
+            document.querySelector('[data-tool="shape"]').addEventListener('click', addShape);
+            document.querySelector('[data-tool="text"]').addEventListener('click', addText);
 
-    if (currentTool === 'brush' || currentTool === 'eraser') {
-        ctx.beginPath();
-        ctx.strokeStyle = currentTool === 'eraser' ? 'white' : colorPicker.value;
-        ctx.lineWidth = sizeSlider.value;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.moveTo(lastX, lastY);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        [lastX, lastY] = [x, y];
-    } else {
-        tempCtx.beginPath();
-        tempCtx.strokeStyle = colorPicker.value;
-        tempCtx.lineWidth = sizeSlider.value;
-        tempCtx.lineCap = 'round';
-        tempCtx.lineJoin = 'round';
+            // --- History (Undo/Redo) ---
+            function saveState() {
+                if (historyIndex < history.length - 1) {
+                    history.splice(historyIndex + 1);
+                }
+                history.push(fabricCanvas.toDatalessJSON());
+                if (history.length > MAX_HISTORY) {
+                    history.shift();
+                }
+                historyIndex = history.length - 1;
+            }
 
-        switch (currentTool) {
-            case 'line':
-                tempCtx.moveTo(startX, startY);
-                tempCtx.lineTo(x, y);
-                break;
-            case 'rectangle':
-                const width = x - startX;
-                const height = y - startY;
-                tempCtx.strokeRect(startX, startY, width, height);
-                break;
-            case 'circle':
-                const radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
-                tempCtx.arc(startX, startY, radius, 0, Math.PI * 2);
-                break;
-        }
-        tempCtx.stroke();
-    }
-}
+            function undo() {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    fabricCanvas.loadFromJSON(history[historyIndex], fabricCanvas.renderAll.bind(fabricCanvas));
+                }
+            }
 
-function startDrawing(e) {
-    isDrawing = true;
-    const rect = tempCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    [lastX, lastY] = [x, y];
-    [startX, startY] = [x, y];
-}
+            function redo() {
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    fabricCanvas.loadFromJSON(history[historyIndex], fabricCanvas.renderAll.bind(fabricCanvas));
+                }
+            }
+            
+            undoBtn.addEventListener('click', undo);
+            redoBtn.addEventListener('click', redo);
+            
+            fabricCanvas.on('object:added', saveState);
+            fabricCanvas.on('object:modified', saveState);
+            fabricCanvas.on('object:removed', saveState);
 
-function stopDrawing() {
-    if (!isDrawing) return;
-    isDrawing = false;
+            // --- Canvas Responsiveness ---
+            const resizeCanvas = () => {
+                fabricCanvas.setWidth(canvasWrapper.clientWidth);
+                fabricCanvas.setHeight(canvasWrapper.clientHeight);
+                fabricCanvas.renderAll();
+            };
+            window.addEventListener('resize', resizeCanvas);
 
-    if (currentTool !== 'brush' && currentTool !== 'eraser') {
-        ctx.drawImage(tempCanvas, 0, 0);
-        tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-    }
-    saveState();
-}
-
-function saveState() {
-    undoStack.push(canvas.toDataURL());
-    redoStack = [];
-    updateUndoRedoButtons();
-}
-
-function updateUndoRedoButtons() {
-    undoBtn.disabled = undoStack.length <= 1;
-    redoBtn.disabled = redoStack.length === 0;
-}
-
-function undo() {
-    if (undoStack.length <= 1) return;
-    redoStack.push(undoStack.pop());
-    loadState(undoStack[undoStack.length - 1]);
-}
-
-function redo() {
-    if (redoStack.length === 0) return;
-    const state = redoStack.pop();
-    undoStack.push(state);
-    loadState(state);
-}
-
-function loadState(state) {
-    const img = new Image();
-    img.src = state;
-    img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        updateUndoRedoButtons();
-    };
-}
-
-function clearCanvas() {
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-    saveState();
-}
-
-// Event Listeners
-window.addEventListener('resize', resizeCanvas);
-tempCanvas.addEventListener('mousedown', startDrawing);
-tempCanvas.addEventListener('mousemove', draw);
-tempCanvas.addEventListener('mouseup', stopDrawing);
-tempCanvas.addEventListener('mouseout', stopDrawing);
-
-toolBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-        toolBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentTool = btn.dataset.tool;
-    });
-});
-
-clearBtn.addEventListener('click', clearCanvas);
-saveBtn.addEventListener('click', () => {
-    const link = document.createElement('a');
-    link.download = 'sketch.png';
-    link.href = canvas.toDataURL();
-    link.click();
-});
-undoBtn.addEventListener('click', undo);
-redoBtn.addEventListener('click', redo);
-
-// Initialize
-resizeCanvas();
+            // --- Initial Setup ---
+            setTool('select'); // Start with the select tool
+            saveState(); // Save initial empty state
+        });
     </script>
 </body>
 </html>

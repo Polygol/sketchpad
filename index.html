@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Draw</title>
+    <title>SketchPad</title>
     <link rel="icon" type="image/png" href="/assets/gurapp/icons/draw.png">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,700,1,0">
+    <!-- Gurasuraisu API for Polygol Integration -->
     <script src="/assets/gurapp/api/gurasuraisu-api.js"></script>
+    <!-- Fabric.js for Canvas Functionality -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <style>
+        /* Inherited Color and Style Variables for Consistency */
         :root {
             --edge-refraction-filter: url('#edge-refraction-only');
             --sun-shadow: 0 0 0 0 transparent;
@@ -62,105 +65,227 @@
             --transparent-color: var(--light-transparent);
             --glass-border: var(--glass-border-light);
         }
+
+        /* Base Body and Layout Styles */
         * {
-            margin: 0; padding: 0; box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
+
         body {
             background-color: var(--background-color);
             color: var(--text-color);
-            height: 100vh; width: 100vw;
-            display: flex; user-select: none; overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            user-select: none;
+            overflow: hidden;
+            flex-direction: column;
         }
+
         .main-container {
             display: grid;
             grid-template-columns: 60px 1fr 280px;
-            grid-template-rows: 50px 1fr 30px;
-            grid-template-areas: "tools options panels" "tools canvas panels" "tools canvas status";
-            height: 100%; width: 100%; gap: 8px; padding: 8px;
+            grid-template-rows: 50px 1fr;
+            grid-template-areas: 
+                "tools options panels"
+                "tools canvas  panels";
+            height: 100vh;
+            gap: 8px;
+            padding: 8px;
         }
+
+        /* Toolbars and Panels Styling */
         .toolbar {
             background-color: var(--search-background);
             border: 1px solid var(--glass-border);
-            border-radius: 35px; corner-shape: superellipse(1.5);
+            border-radius: 35px;
+            corner-shape: superellipse(1.5);
             backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
             box-shadow: var(--sun-shadow);
-            display: flex; align-items: center; padding: 8px;
+            display: flex;
+            align-items: center;
+            padding: 8px;
         }
-        #tool-bar { grid-area: tools; flex-direction: column; gap: 8px; padding: 12px 8px; }
-        #options-bar { grid-area: options; gap: 12px; padding: 0 15px; }
-        #panels-container { grid-area: panels; flex-direction: column; gap: 8px; overflow-y: auto; background: none; border: none; backdrop-filter: none; box-shadow: none; padding: 0; }
+
+        #tool-bar {
+            grid-area: tools;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px 8px;
+        }
+
+        #options-bar {
+            grid-area: options;
+            gap: 12px;
+            padding: 8px 15px;
+        }
+
+        #panels-container {
+            grid-area: panels;
+            flex-direction: column;
+            gap: 8px;
+            overflow: hidden;
+        }
+
         .canvas-wrapper {
             grid-area: canvas;
-            background-image: linear-gradient(45deg, #282828 25%, transparent 25%), linear-gradient(-45deg, #282828 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #282828 75%), linear-gradient(-45deg, transparent 75%, #282828 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: var(--background-color-dark); /* A slightly different bg for contrast */
             border-radius: 20px;
-            overflow: hidden; position: relative;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
-            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
         }
-        #status-bar {
-            grid-area: status; background: none; border: none; backdrop-filter: none; box-shadow: none;
-            font-size: 12px; color: var(--secondary-text-color); gap: 20px;
+
+        #main-canvas {
+            width: 100%;
+            height: 100%;
         }
-        .tool-btn, .action-btn {
-            background: none; border: none; color: var(--secondary-text-color);
-            width: 44px; height: 44px; border-radius: 18px; corner-shape: superellipse(1.5);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;
+        
+        /* Tool and Panel UI Elements */
+        .tool-btn {
+            background: none;
+            border: none;
+            color: var(--secondary-text-color);
+            width: 44px;
+            height: 44px;
+            border-radius: 18px;
+            corner-shape: superellipse(1.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .tool-btn:hover, .action-btn:hover { background-color: var(--dark-transparent); }
-        .tool-btn.active { background-color: var(--secondary-text-color); color: var(--background-color); }
+
+        .tool-btn:hover {
+            background-color: var(--dark-transparent);
+        }
+
+        .tool-btn.active {
+            background-color: var(--secondary-text-color);
+            color: var(--background-color);
+        }
+
         .panel {
             background-color: var(--search-background);
             border: 1px solid var(--glass-border);
-            border-radius: 25px; corner-shape: superellipse(1.5);
+            border-radius: 25px;
+            corner-shape: superellipse(1.5);
             backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
             box-shadow: var(--sun-shadow);
-            padding: 15px; display: flex; flex-direction: column; gap: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-        .panel-header { font-family: 'Open Runde', sans-serif; font-weight: 600; margin-bottom: 5px; }
-        #layers-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; }
+
+        .panel-header {
+            font-family: 'Open Runde', sans-serif;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        /* Layer Specific Styles */
+        #layers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            overflow-y: auto;
+            max-height: 200px; /* Example height */
+        }
+        
         .layer-item {
-            background-color: var(--dark-transparent); padding: 8px 12px;
-            border-radius: 12px; corner-shape: superellipse(1.5);
-            display: flex; align-items: center; gap: 8px; cursor: pointer;
+            background-color: var(--dark-transparent);
+            padding: 8px 12px;
+            border-radius: 12px;
+            corner-shape: superellipse(1.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
         }
-        .layer-item.active { border: 1px solid var(--text-color); background-color: var(--transparent-color); }
-        .layer-name { flex-grow: 1; background: none; border: none; color: inherit; font-size: 14px; }
-        .options-group { display: flex; align-items: center; gap: 8px; }
-        .options-group label { font-size: 14px; color: var(--secondary-text-color); }
-        input[type="range"] { -webkit-appearance: none; flex-grow: 1; height: 5px; background: var(--dark-transparent); border-radius: 5px; outline: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: var(--text-color); border-radius: 50%; cursor: pointer; }
-        input[type="number"], select { width: 60px; background-color: var(--dark-transparent); border: 1px solid var(--glass-border); color: var(--text-color); border-radius: 8px; padding: 5px; text-align: center; }
-        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(10px); z-index: 1000; display: flex; align-items: center; justify-content: center; }
-        .modal-content { background: var(--modal-background); padding: 25px; border-radius: 50px; corner-shape: superellipse(1.5); width: 90%; max-width: 450px; backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(5px); border: 1px solid var(--glass-border); }
-        .modal-content h2 { margin-bottom: 20px; text-align: center; }
-        .modal-btn { background-color: var(--search-background); color: var(--text-color); border: 1px solid var(--glass-border); padding: 10px 20px; border-radius: 25px; cursor: pointer; width: 100%; margin-top: 10px; }
-        .modal-btn.primary { background-color: var(--secondary-text-color); color: var(--background-color); }
-        #properties-panel { position: absolute; z-index: 10; display: none; padding: 6px 10px; border-radius: 20px; gap: 15px; }
+
+        .layer-item.active {
+            background-color: var(--secondary-text-color);
+            color: var(--background-color);
+        }
+
+        .layer-name { flex-grow: 1; }
+
+        /* Generic UI Controls */
+        .options-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .options-group label {
+            font-size: 14px;
+            color: var(--secondary-text-color);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            flex-grow: 1;
+            height: 5px;
+            background: var(--dark-transparent);
+            border-radius: 5px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--text-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            background-color: var(--dark-transparent);
+            border: 1px solid var(--glass-border);
+            color: var(--text-color);
+            border-radius: 8px;
+            padding: 5px;
+            text-align: center;
+        }
+
+        .material-symbols-rounded {
+          font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz' 24;
+          vertical-align: middle;
+        }
     </style>
 </head>
-<body data-app-name="DRAW">
-    <svg style="display: none"><filter id="edge-refraction-only" color-interpolation-filters="linearRGB"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" result="turbulence"></feTurbulence><feMorphology in="SourceGraphic" operator="erode" radius="4" result="eroded"></feMorphology><feComposite in="SourceGraphic" in2="eroded" operator="out" result="border_mask"></feComposite><feComposite in="turbulence" in2="border_mask" operator="in" result="edge_turbulence"></feComposite><feDisplacementMap in="SourceGraphic" in2="edge_turbulence" scale="15" xChannelSelector="R" yChannelSelector="G" result="disp_positive"></feDisplacementMap><feDisplacementMap in="SourceGraphic" in2="edge_turbulence" scale="-15" xChannelSelector="R" yChannelSelector="G" result="disp_negative"></feDisplacementMap><feFlood flood-color="white" width="50%" height="50%" x="0" y="0" result="topLeftRect"></feFlood><feFlood flood-color="white" width="50%" height="50%" x="50%" y="50%" result="bottomRightRect"></feFlood><feComposite in="disp_positive" in2="topLeftRect" operator="in" result="topLeft_part"></feComposite><feComposite in="disp_negative" in2="bottomRightRect" operator="in" result="bottomRight_part"></feComposite><feBlend in="topLeft_part" in2="bottomRight_part" mode="lighten" result="blended_image"></feBlend><feComponentTransfer in="blended_image"><feFuncA type="linear" slope="0.95"></feFuncA></feComponentTransfer></filter></svg>
+<body data-app-name="SKETCHPAD">
+    
+    <!-- Complex SVG Filters for Glass Effect -->
+    <svg style="display: none">
+        <filter id="edge-refraction-only" color-interpolation-filters="linearRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" result="turbulence"></feTurbulence>
+            <feMorphology in="SourceGraphic" operator="erode" radius="4" result="eroded"></feMorphology>
+            <feComposite in="SourceGraphic" in2="eroded" operator="out" result="border_mask"></feComposite>
+            <feComposite in="turbulence" in2="border_mask" operator="in" result="edge_turbulence"></feComposite>
+            <feDisplacementMap in="SourceGraphic" in2="edge_turbulence" scale="15" xChannelSelector="R" yChannelSelector="G" result="disp_positive"></feDisplacementMap>
+            <feDisplacementMap in="SourceGraphic" in2="edge_turbulence" scale="-15" xChannelSelector="R" yChannelSelector="G" result="disp_negative"></feDisplacementMap>
+            <feFlood flood-color="white" width="50%" height="50%" x="0" y="0" result="topLeftRect"></feFlood>
+            <feFlood flood-color="white" width="50%" height="50%" x="50%" y="50%" result="bottomRightRect"></feFlood>
+            <feComposite in="disp_positive" in2="topLeftRect" operator="in" result="topLeft_part"></feComposite>
+            <feComposite in="disp_negative" in2="bottomRightRect" operator="in" result="bottomRight_part"></feComposite>
+            <feBlend in="topLeft_part" in2="bottomRight_part" mode="lighten" result="blended_image"></feBlend>
+            <feComponentTransfer in="blended_image">
+                <feFuncA type="linear" slope="0.95"></feFuncA>
+            </feComponentTransfer>
+        </filter>
+    </svg>
 
-    <!-- Startup Modal -->
-    <div id="startup-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>Welcome to Draw</h2>
-            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
-                <input type="number" id="canvas-width" placeholder="Width" value="1920" style="width:100%;">
-                <input type="number" id="canvas-height" placeholder="Height" value="1080" style="width:100%;">
-            </div>
-            <button id="new-project-btn" class="modal-btn primary">Create New Project</button>
-            <button id="open-last-btn" class="modal-btn">Open Last Session</button>
-        </div>
-    </div>
+    <!-- Main Application Layout -->
+    <div class="main-container">
 
-    <!-- Main App Structure (Initially hidden) -->
-    <div class="main-container" style="display: none;">
+        <!-- Left Vertical Tool Bar -->
         <div id="tool-bar" class="toolbar">
             <button class="tool-btn active" data-tool="select" title="Select & Transform"><span class="material-symbols-rounded">pan_tool</span></button>
             <button class="tool-btn" data-tool="brush" title="Brush"><span class="material-symbols-rounded">brush</span></button>
@@ -171,342 +296,199 @@
             <button class="tool-btn" data-tool="eyedropper" title="Eyedropper"><span class="material-symbols-rounded">colorize</span></button>
         </div>
 
+        <!-- Top Horizontal Options Bar (Contextual) -->
         <div id="options-bar" class="toolbar">
-            <!-- File Menu -->
-            <div class="options-group">
-                <button class="action-btn" id="file-menu-btn" style="width:auto; padding: 0 15px; gap: 8px;"><span class="material-symbols-rounded">menu</span>File</button>
-                <!-- Dropdown will be handled by JS -->
-            </div>
-            <!-- Contextual Options -->
-            <div id="brush-options" class="options-group">
+            <div class="options-group" id="brush-options">
                 <label for="brush-size">Size:</label>
-                <input type="range" id="brush-size" min="1" max="200" value="10"><input type="number" id="brush-size-val" min="1" max="200" value="10">
+                <input type="range" id="brush-size" min="1" max="100" value="10">
+                <input type="number" id="brush-size-val" min="1" max="100" value="10">
                 <label for="brush-color">Color:</label>
                 <input type="color" id="brush-color" value="#ffffff">
-                <button class="action-btn" id="brush-settings-btn" title="Brush Settings"><span class="material-symbols-rounded">tune</span></button>
             </div>
-            <!-- More option groups here... -->
+             <div class="options-group" id="text-options" style="display:none;">
+                <label>Font:</label>
+                <select id="font-family">
+                    <option>Arial</option>
+                    <option>Open Runde</option>
+                    <option>Inter</option>
+                    <option>Verdana</option>
+                </select>
+                <label for="font-size">Size:</label>
+                <input type="number" id="font-size" min="1" max="500" value="40">
+            </div>
         </div>
 
+        <!-- Main Canvas Area -->
         <div class="canvas-wrapper">
             <canvas id="main-canvas"></canvas>
-            <div id="properties-panel" class="toolbar">
-                <div class="options-group">
-                    <label>Fill:</label><input type="color" id="prop-fill">
-                    <label>Stroke:</label><input type="color" id="prop-stroke"><input type="number" id="prop-stroke-width" min="0" title="Stroke Width">
-                </div>
-                <div class="options-group">
-                    <label>Opacity:</label><input type="range" id="prop-opacity" min="0" max="1" step="0.01">
-                </div>
-            </div>
         </div>
 
-        <div id="panels-container">
+        <!-- Right Panels Container -->
+        <div id="panels-container" class="toolbar">
             <div id="layers-panel" class="panel" style="flex-grow: 1;">
                 <div class="panel-header">Layers</div>
-                <div id="layers-list"></div>
+                <div id="layers-list">
+                    <!-- Layer items will be dynamically inserted here -->
+                </div>
                 <div class="panel-actions" style="display:flex; gap: 8px; margin-top: auto;">
-                    <button id="add-layer-btn" class="action-btn" title="Add Layer"><span class="material-symbols-rounded">add_box</span></button>
-                    <button id="remove-layer-btn" class="action-btn" title="Remove Layer"><span class="material-symbols-rounded">delete</span></button>
-                    <button id="merge-down-btn" class="action-btn" title="Merge Down"><span class="material-symbols-rounded">layers</span></button>
+                    <button id="add-layer-btn" class="tool-btn" title="Add Layer"><span class="material-symbols-rounded">add_box</span></button>
+                    <button id="remove-layer-btn" class="tool-btn" title="Remove Layer"><span class="material-symbols-rounded">delete</span></button>
                 </div>
             </div>
             <div id="history-panel" class="panel">
                 <div class="panel-header">History</div>
-                <div id="history-list" style="max-height: 150px; overflow-y:auto; display:flex; flex-direction:column-reverse; gap: 5px;"></div>
+                <div class="panel-actions" style="display:flex; gap: 8px;">
+                     <button id="undo-btn" class="tool-btn" title="Undo"><span class="material-symbols-rounded">undo</span></button>
+                     <button id="redo-btn" class="tool-btn" title="Redo"><span class="material-symbols-rounded">redo</span></button>
+                </div>
             </div>
         </div>
 
-        <div id="status-bar" class="toolbar">
-            <span id="zoom-level">100%</span>
-            <span id="canvas-coords">X: 0, Y: 0</span>
-        </div>
     </div>
-    <input type="file" id="image-importer" accept="image/*" style="display:none;">
 
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // --- Global State ---
-        let fabricCanvas;
-        let layers = [];
-        let activeLayerIndex = -1;
-        let history = [];
-        let historyIndex = -1;
-        const MAX_HISTORY = 50;
-        let activeTool = 'select';
-        let isPanning = false;
-        let lastPanPoint;
-        let autosaveInterval;
-
-        // --- UI Elements ---
-        const startupModal = document.getElementById('startup-modal');
-        const mainContainer = document.querySelector('.main-container');
-        const canvasWrapper = document.querySelector('.canvas-wrapper');
-        const canvasEl = document.getElementById('main-canvas');
-        const propertiesPanel = document.getElementById('properties-panel');
-
-        // --- IndexedDB Helper ---
-        const db = {
-            instance: null,
-            init: () => new Promise((resolve, reject) => {
-                const request = indexedDB.open('GuraDrawDB', 1);
-                request.onupgradeneeded = e => e.target.result.createObjectStore('files', { keyPath: 'id' });
-                request.onsuccess = e => { db.instance = e.target.result; resolve(); };
-                request.onerror = e => reject(e.target.error);
-            }),
-            get: id => new Promise((resolve) => {
-                db.instance.transaction('files').objectStore('files').get(id).onsuccess = e => resolve(e.target.result);
-            }),
-            set: (id, data) => db.instance.transaction('files', 'readwrite').objectStore('files').put({ id, data })
-        };
-
-        // --- Initialization ---
-        async functioninitializeApp() {
-            await db.init();
-            const lastSession = await db.get('autosave');
-            const openLastBtn = document.getElementById('open-last-btn');
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvasWrapper = document.querySelector('.canvas-wrapper');
+            const canvasEl = document.getElementById('main-canvas');
             
-            if (lastSession) {
-                openLastBtn.style.display = 'block';
-                openLastBtn.onclick = () => loadProject(lastSession.data);
-            } else {
-                openLastBtn.style.display = 'none';
+            // Initialize Fabric.js Canvas
+            const fabricCanvas = new fabric.Canvas(canvasEl, {
+                width: canvasWrapper.clientWidth,
+                height: canvasWrapper.clientHeight,
+                backgroundColor: '#333333',
+                isDrawingMode: false,
+                selection: true
+            });
+
+            // --- State Management ---
+            let activeTool = 'select';
+            let history = [];
+            let historyIndex = -1;
+            const MAX_HISTORY = 50;
+
+            // --- UI Elements ---
+            const toolBtns = document.querySelectorAll('.tool-btn[data-tool]');
+            const brushSizeSlider = document.getElementById('brush-size');
+            const brushSizeValue = document.getElementById('brush-size-val');
+            const brushColorPicker = document.getElementById('brush-color');
+            const addLayerBtn = document.getElementById('add-layer-btn');
+            const undoBtn = document.getElementById('undo-btn');
+            const redoBtn = document.getElementById('redo-btn');
+
+            // --- Tool Switching Logic ---
+            function setTool(tool) {
+                activeTool = tool;
+                fabricCanvas.isDrawingMode = (activeTool === 'brush' || activeTool === 'eraser');
+                
+                toolBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tool === tool));
+
+                // Update brush for eraser
+                if(activeTool === 'eraser'){
+                    fabricCanvas.freeDrawingBrush = new fabric.EraserBrush(fabricCanvas);
+                    fabricCanvas.freeDrawingBrush.width = parseInt(brushSizeSlider.value, 10);
+                } else {
+                    fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+                    fabricCanvas.freeDrawingBrush.width = parseInt(brushSizeSlider.value, 10);
+                    fabricCanvas.freeDrawingBrush.color = brushColorPicker.value;
+                }
             }
 
-            document.getElementById('new-project-btn').onclick = () => {
-                const width = parseInt(document.getElementById('canvas-width').value) || 1920;
-                const height = parseInt(document.getElementById('canvas-height').value) || 1080;
-                startNewProject(width, height);
-            };
-        }
-
-        function startNewProject(width, height) {
-            initCanvas(width, height);
-            addLayer('Background', { background: '#ffffff' });
-            selectLayer(0);
-            saveState('Initial State');
-            startupModal.style.display = 'none';
-            mainContainer.style.display = 'grid';
-        }
-
-        function initCanvas(width, height) {
-            canvasEl.width = width;
-            canvasEl.height = height;
-            fabricCanvas = new fabric.Canvas(canvasEl, {
-                width: width,
-                height: height,
-                stopContextMenu: true,
-                fireRightClick: true,
-            });
-            setupCanvasListeners();
-            setupToolListeners();
-            autosaveInterval = setInterval(autosave, 15000); // Autosave every 15 seconds
-        }
-
-        // --- Layer Management ---
-        function addLayer(name = 'New Layer', options = {}) {
-            const newLayerCanvas = new fabric.Canvas(null, { width: fabricCanvas.width, height: fabricCanvas.height });
-            if(options.background) newLayerCanvas.backgroundColor = options.background;
-
-            const layer = {
-                id: Date.now(),
-                name: name,
-                canvas: newLayerCanvas,
-                opacity: 1,
-                blendMode: 'source-over',
-                visible: true,
-                locked: false
-            };
-            layers.splice(0, 0, layer);
-            renderLayersUI();
-            return layers.indexOf(layer);
-        }
-
-        function selectLayer(index) {
-            if (activeLayerIndex === index || !layers[index] || layers[index].locked) return;
-
-            // Save current canvas state to the old layer object
-            if (activeLayerIndex > -1 && layers[activeLayerIndex]) {
-                 layers[activeLayerIndex].canvas.loadFromJSON(fabricCanvas.toDatalessJSON(), () => {});
-            }
-            
-            activeLayerIndex = index;
-            const newLayer = layers[index];
-            
-            fabricCanvas.loadFromJSON(newLayer.canvas.toDatalessJSON(), () => {
-                fabricCanvas.renderAll();
-                updateActiveLayerUI();
-            });
-        }
-        
-        function renderLayersUI() {
-            const list = document.getElementById('layers-list');
-            list.innerHTML = '';
-            layers.forEach((layer, index) => {
-                const item = document.createElement('div');
-                item.className = 'layer-item';
-                item.classList.toggle('active', index === activeLayerIndex);
-                item.innerHTML = `
-                    <span class="material-symbols-rounded">${layer.visible ? 'visibility' : 'visibility_off'}</span>
-                    <input class="layer-name" value="${layer.name}" readonly>
-                    <span class="material-symbols-rounded">${layer.locked ? 'lock' : 'lock_open'}</span>
-                `;
-                item.onclick = () => selectLayer(index);
-                list.appendChild(item);
-            });
-        }
-        function updateActiveLayerUI() {
-            document.querySelectorAll('.layer-item').forEach((item, index) => {
-                 item.classList.toggle('active', index === activeLayerIndex);
-            });
-        }
-
-        // --- File I/O & History ---
-        function saveState(actionName = 'Action') {
-            if (!fabricCanvas) return;
-            const state = fabricCanvas.toDatalessJSON();
-            history.splice(historyIndex + 1);
-            history.push({ action: actionName, state: state });
-            if (history.length > MAX_HISTORY) history.shift();
-            historyIndex = history.length - 1;
-            renderHistoryUI();
-        }
-
-        function renderHistoryUI() {
-            const list = document.getElementById('history-list');
-            list.innerHTML = '';
-            history.forEach((item, index) => {
-                const el = document.createElement('div');
-                el.className = 'layer-item'; // reuse style
-                el.textContent = item.action;
-                el.classList.toggle('active', index === historyIndex);
-                el.onclick = () => {
-                    historyIndex = index;
-                    fabricCanvas.loadFromJSON(item.state, fabricCanvas.renderAll.bind(fabricCanvas));
-                    renderHistoryUI();
-                };
-                list.appendChild(el);
-            });
-        }
-
-        async function autosave() {
-            if (layers.length === 0) return;
-            const projectData = await createProjectData();
-            await db.set('autosave', projectData);
-            console.log('Project autosaved.');
-        }
-
-        async function createProjectData() {
-            // Ensure current canvas state is saved to active layer
-            if (activeLayerIndex > -1) {
-                 layers[activeLayerIndex].canvas.loadFromJSON(fabricCanvas.toDatalessJSON(), () => {});
-            }
-            return {
-                width: fabricCanvas.width,
-                height: fabricCanvas.height,
-                layers: layers.map(l => ({
-                    name: l.name, opacity: l.opacity, blendMode: l.blendMode,
-                    visible: l.visible, locked: l.locked,
-                    fabricJSON: l.canvas.toDatalessJSON()
-                })),
-            };
-        }
-
-        async function loadProject(projectData) {
-            startupModal.style.display = 'none';
-            mainContainer.style.display = 'grid';
-            initCanvas(projectData.width, projectData.height);
-            layers = [];
-            
-            for(const layerData of projectData.layers.reverse()) {
-                const newLayerIndex = addLayer(layerData.name);
-                const layer = layers[newLayerIndex];
-                layer.opacity = layerData.opacity;
-                layer.blendMode = layerData.blendMode;
-                layer.visible = layerData.visible;
-                layer.locked = layerData.locked;
-                await new Promise(resolve => layer.canvas.loadFromJSON(layerData.fabricJSON, resolve));
-            }
-            selectLayer(0);
-            renderLayersUI();
-        }
-
-        // --- Event Listeners ---
-        function setupCanvasListeners() {
-            fabricCanvas.on({
-                'mouse:down': e => {
-                    if (e.e.altKey || e.e.button === 1) {
-                        isPanning = true;
-                        lastPanPoint = { x: e.e.clientX, y: e.e.clientY };
-                        fabricCanvas.defaultCursor = 'grabbing';
-                    }
-                },
-                'mouse:move': e => {
-                    if (isPanning) {
-                        const delta = new fabric.Point(e.e.clientX - lastPanPoint.x, e.e.clientY - lastPanPoint.y);
-                        fabricCanvas.relativePan(delta);
-                        lastPanPoint = { x: e.e.clientX, y: e.e.clientY };
-                    }
-                },
-                'mouse:up': () => {
-                    isPanning = false;
-                    fabricCanvas.defaultCursor = 'default';
-                },
-                'mouse:wheel': opt => {
-                    const delta = opt.e.deltaY;
-                    let zoom = fabricCanvas.getZoom();
-                    zoom *= 0.999 ** delta;
-                    if (zoom > 20) zoom = 20;
-                    if (zoom < 0.01) zoom = 0.01;
-                    fabricCanvas.zoomToPoint({ x: opt.e.offsetX, y: opt.e.offsetY }, zoom);
-                    opt.e.preventDefault();
-                    opt.e.stopPropagation();
-                    document.getElementById('zoom-level').textContent = `${Math.round(zoom * 100)}%`;
-                },
-                'path:created': () => saveState('Draw Path'),
-                'object:modified': () => saveState('Transform Object'),
-            });
-        }
-        
-        function setupToolListeners() {
-            document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+            toolBtns.forEach(btn => {
                 btn.addEventListener('click', () => setTool(btn.dataset.tool));
             });
-            document.getElementById('add-layer-btn').onclick = () => {
-                const newIndex = addLayer();
-                selectLayer(newIndex);
-                saveState('Add Layer');
-            };
-            document.getElementById('image-importer').onchange = e => {
-                const file = e.target.files[0];
-                if(file) {
-                    const reader = new FileReader();
-                    reader.onload = f => {
-                        fabric.Image.fromURL(f.target.result, img => {
-                            fabricCanvas.add(img);
-                            saveState('Import Image');
-                        });
-                    };
-                    reader.readAsDataURL(file);
+            
+            // --- Brush/Eraser Options ---
+            function updateBrushSize() {
+                const size = parseInt(this.value, 10);
+                brushSizeSlider.value = size;
+                brushSizeValue.value = size;
+                if (fabricCanvas.freeDrawingBrush) {
+                    fabricCanvas.freeDrawingBrush.width = size;
                 }
-            };
-            document.getElementById('file-menu-btn').addEventListener('click', () => {
-                // Placeholder for a real dropdown menu
-                Gurasuraisu.showPopup("File > Import Image clicked as example");
-                document.getElementById('image-importer').click();
+            }
+            brushSizeSlider.addEventListener('input', updateBrushSize);
+            brushSizeValue.addEventListener('input', updateBrushSize);
+            
+            brushColorPicker.addEventListener('input', () => {
+                if (fabricCanvas.freeDrawingBrush) {
+                    fabricCanvas.freeDrawingBrush.color = brushColorPicker.value;
+                }
             });
-        }
 
-        function setTool(tool) {
-             activeTool = tool;
-             fabricCanvas.isDrawingMode = (tool === 'brush' || tool === 'eraser');
-             // Show/hide contextual options
-             //...
-        }
-        
-        // --- Init ---
-        initializeApp();
-    });
+            // --- Shape & Text Tools ---
+            function addShape() {
+                const rect = new fabric.Rect({
+                    left: 100,
+                    top: 100,
+                    fill: brushColorPicker.value,
+                    width: 150,
+                    height: 100,
+                    strokeWidth: 2,
+                    stroke: '#ffffff'
+                });
+                fabricCanvas.add(rect);
+            }
+            
+            function addText() {
+                const text = new fabric.IText('Your Text Here', {
+                    left: 100,
+                    top: 150,
+                    fontFamily: 'Open Runde',
+                    fill: brushColorPicker.value,
+                    fontSize: 40
+                });
+                fabricCanvas.add(text);
+                fabricCanvas.setActiveObject(text);
+            }
+            
+            document.querySelector('[data-tool="shape"]').addEventListener('click', addShape);
+            document.querySelector('[data-tool="text"]').addEventListener('click', addText);
+
+            // --- History (Undo/Redo) ---
+            function saveState() {
+                if (historyIndex < history.length - 1) {
+                    history.splice(historyIndex + 1);
+                }
+                history.push(fabricCanvas.toDatalessJSON());
+                if (history.length > MAX_HISTORY) {
+                    history.shift();
+                }
+                historyIndex = history.length - 1;
+            }
+
+            function undo() {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    fabricCanvas.loadFromJSON(history[historyIndex], fabricCanvas.renderAll.bind(fabricCanvas));
+                }
+            }
+
+            function redo() {
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    fabricCanvas.loadFromJSON(history[historyIndex], fabricCanvas.renderAll.bind(fabricCanvas));
+                }
+            }
+            
+            undoBtn.addEventListener('click', undo);
+            redoBtn.addEventListener('click', redo);
+            
+            fabricCanvas.on('object:added', saveState);
+            fabricCanvas.on('object:modified', saveState);
+            fabricCanvas.on('object:removed', saveState);
+
+            // --- Canvas Responsiveness ---
+            const resizeCanvas = () => {
+                fabricCanvas.setWidth(canvasWrapper.clientWidth);
+                fabricCanvas.setHeight(canvasWrapper.clientHeight);
+                fabricCanvas.renderAll();
+            };
+            window.addEventListener('resize', resizeCanvas);
+
+            // --- Initial Setup ---
+            setTool('select'); // Start with the select tool
+            saveState(); // Save initial empty state
+        });
     </script>
 </body>
 </html>

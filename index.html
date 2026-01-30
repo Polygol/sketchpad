@@ -27,7 +27,7 @@
         .actionbar {
             display: flex;
             gap: 10px;
-            padding: 15px 115px 15px 26px;
+            padding: 15px 200px 15px 25px;
             background-color: transparent;
             border-bottom: 1px solid var(--glass-border);
             border-radius: 0;
@@ -45,19 +45,24 @@
             background-color: var(--search-background);
             color: var(--text-color);
             border: 1px solid var(--glass-border);
-            border-radius: 25px;
-            padding: 8px 15px;
+            border-radius: 50%;
             cursor: pointer;
             height: 40px;
+            aspect-ratio: 1 / 1;
             box-shadow: var(--sun-shadow);
             transition: background-color 0.2s;
             backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
         }
+        
+        .tool-btn .material-symbols-rounded {
+            font-size: 20px;
+        }
 
         .tool-btn.active {
-            background-color: var(--text-color);
+            background-color: var(--accent);
             color: var(--background-color);
-            border-radius: 15px;
+            border-radius: 35px;
+            corner-shape: superellipse(1.5);
         }
 
         .tool-btn:disabled {
@@ -67,51 +72,13 @@
         }
 
         input[type="color"] {
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        .color-picker {
-            width: 40px;
-            height: 40px;
-            border: 1px solid var(--glass-border);
-            border-radius: 40px;
-            cursor: pointer;
-            padding: 0;
-            background: none;
-            cursor: pointer;
-            overflow: hidden;
-            box-shadow: var(--sun-shadow);
-            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
+            width: 40px !important;
+            height: 40px !important;
         }
 
         .size-slider {
-            width: 100px;
-            height: 35px;
-            -webkit-appearance: none;
-            background: var(--search-background);
-            border-radius: 25px;
-            outline: none;
-            border: 1px solid var(--glass-border);
-            padding: 0 9px;
-            box-shadow: var(--sun-shadow);
-            backdrop-filter: var(--edge-refraction-filter) saturate(2) blur(2.5px);
-        }
-
-        .size-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            background: var(--text-color);
-            border-radius: 50%;
-            cursor: pointer;
-            border: 1px solid var(--glass-border);
-        }
-
-        .size-slider::-webkit-slider-thumb:active {
-            width: 24px;
-            height: 24px;
-            transform: scale(1.1);
+            height: 40px !important;
+            padding: 0 12px !important;
         }
 
         .canvas-container {
@@ -121,6 +88,9 @@
             border-radius: 0;
             overflow: hidden;
             background-color: white;
+            border-radius: 15px;
+            corner-shape: superellipse(1.5);
+            margin-bottom: 25px;
         }
         
         canvas {

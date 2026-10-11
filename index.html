@@ -3,10 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>SketchPad</title>
+    <title data-lang-key="TITLE">SketchPad</title>
+    <script src="lang.js">
+        // --- Internationalization (i18n) Support ---
+        function getAppLanguage() {
+            let l = (localStorage.getItem('language') || localStorage.getItem('selectedLanguage') || 'EN').toUpperCase();
+            if (l === 'JA') l = 'JP';
+            return ['EN', 'JP', 'KO', 'ZH'].includes(l) ? l : 'EN';
+        }
+
+        function t(key, params = {}) {
+            const lang = getAppLanguage();
+            const dict = window['LANG_' + lang + '_SKETCHPAD'] || window['LANG_EN_SKETCHPAD'] || {};
+            let str = dict[key] || key;
+            Object.keys(params).forEach(p => {
+                str = str.replace(new RegExp('\\{' + p + '\\}', 'g'), params[p]);
+            });
+            return str;
+        }
+
+        function applyLanguage(langCode) {
+            if (langCode) localStorage.setItem('language', langCode);
+            const lang = getAppLanguage();
+            const bcpMap = { EN: 'en-US', JP: 'ja-JP', KO: 'ko-KR', ZH: 'zh-CN' };
+            document.documentElement.lang = bcpMap[lang] || 'en-US';
+            document.querySelectorAll('[data-lang-key]').forEach(el => {
+                const k = el.getAttribute('data-lang-key');
+                if (k) {
+                    if (el.tagName === 'TITLE') {
+                        document.title = t(k);
+                    } else {
+                        el.textContent = t(k);
+                    }
+                }
+            });
+            document.querySelectorAll('[data-lang-placeholder]').forEach(el => {
+                const k = el.getAttribute('data-lang-placeholder');
+                if (k) el.placeholder = t(k);
+            });
+            document.querySelectorAll('[data-lang-title]').forEach(el => {
+                const k = el.getAttribute('data-lang-title');
+                if (k) el.title = t(k);
+            });
+            if (typeof onLanguageChanged === 'function') {
+                onLanguageChanged(lang);
+            }
+        }
+
+        window.addEventListener('message', (e) => {
+            if (e.data && (e.data.type === 'languageUpdate' || e.data.type === 'localeUpdate')) {
+                applyLanguage(e.data.languageCode);
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', () => applyLanguage());
+
+    </script>
     <link rel="icon" href="favicon.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/gh/Polygol/polygol.github.io@main/assets/gurapp/api/gurasuraisu-api.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/gh/Polygol/polygol.github.io@main/assets/polygolapp/api/polygol-api.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
@@ -108,25 +163,25 @@
 <body>
     <div class="actionbar">
         <div class="tool-group">
-            <button class="tool-btn active" data-tool="brush"><span class="material-symbols-rounded">ink_pen</span></button>
-            <button class="tool-btn" data-tool="eraser"><span class="material-symbols-rounded">ink_eraser</span></button>
+            <button class="tool-btn active" data-tool="brush" data-lang-title="BRUSH" title="Brush"><span class="material-symbols-rounded">ink_pen</span></button>
+            <button class="tool-btn" data-tool="eraser" data-lang-title="ERASER" title="Eraser"><span class="material-symbols-rounded">ink_eraser</span></button>
         </div>
         <div class="tool-group">
-            <button class="tool-btn" data-tool="line"><span class="material-symbols-rounded">horizontal_rule</span></button>
-            <button class="tool-btn" data-tool="rectangle"><span class="material-symbols-rounded">square</span></button>
-            <button class="tool-btn" data-tool="circle"><span class="material-symbols-rounded">circle</span></button>
+            <button class="tool-btn" data-tool="line" data-lang-title="LINE" title="Line"><span class="material-symbols-rounded">horizontal_rule</span></button>
+            <button class="tool-btn" data-tool="rectangle" data-lang-title="RECTANGLE" title="Rectangle"><span class="material-symbols-rounded">square</span></button>
+            <button class="tool-btn" data-tool="circle" data-lang-title="CIRCLE" title="Circle"><span class="material-symbols-rounded">circle</span></button>
         </div>
         <div class="tool-group">
-            <input type="color" class="color-picker" id="colorPicker" value="#000000">
-            <input type="range" class="size-slider" id="sizeSlider" min="1" max="50" value="5">
+            <input type="color" class="color-picker" id="colorPicker" data-lang-title="COLOR" title="Color" value="#000000">
+            <input type="range" class="size-slider" id="sizeSlider" data-lang-title="SIZE" title="Size" min="1" max="50" value="5">
         </div>
         <div class="tool-group">
-            <button class="tool-btn" id="undoBtn" disabled><span class="material-symbols-rounded">undo</span></button>
-            <button class="tool-btn" id="redoBtn" disabled><span class="material-symbols-rounded">redo</span></button>
+            <button class="tool-btn" id="undoBtn" data-lang-title="UNDO" title="Undo" disabled><span class="material-symbols-rounded">undo</span></button>
+            <button class="tool-btn" id="redoBtn" data-lang-title="REDO" title="Redo" disabled><span class="material-symbols-rounded">redo</span></button>
         </div>
         <div class="tool-group">
-            <button class="tool-btn" id="clearBtn"><span class="material-symbols-rounded">refresh</span></button>
-            <button class="tool-btn" id="saveBtn"><span class="material-symbols-rounded">arrow_circle_down</span></button>
+            <button class="tool-btn" id="clearBtn" data-lang-title="CLEAR" title="Clear"><span class="material-symbols-rounded">refresh</span></button>
+            <button class="tool-btn" id="saveBtn" data-lang-title="SAVE" title="Save"><span class="material-symbols-rounded">arrow_circle_down</span></button>
         </div>
     </div>
 

@@ -1,4 +1,4 @@
-const LANG_EN_SKETCHPAD = {
+window.LANG_EN_SKETCHPAD = {
     TITLE: "SketchPad",
     BRUSH: "Brush",
     ERASER: "Eraser",
@@ -13,7 +13,7 @@ const LANG_EN_SKETCHPAD = {
     SAVE: "Save"
 };
 
-const LANG_JP_SKETCHPAD = {
+window.LANG_JP_SKETCHPAD = {
     TITLE: "スケッチパッド",
     BRUSH: "ブラシ",
     ERASER: "消しゴム",
@@ -28,7 +28,7 @@ const LANG_JP_SKETCHPAD = {
     SAVE: "保存"
 };
 
-const LANG_KO_SKETCHPAD = {
+window.LANG_KO_SKETCHPAD = {
     TITLE: "스케치패드",
     BRUSH: "브러시",
     ERASER: "지우개",
@@ -43,7 +43,7 @@ const LANG_KO_SKETCHPAD = {
     SAVE: "저장"
 };
 
-const LANG_ZH_SKETCHPAD = {
+window.LANG_ZH_SKETCHPAD = {
     TITLE: "画板",
     BRUSH: "画笔",
     ERASER: "橡皮擦",
@@ -57,3 +57,8 @@ const LANG_ZH_SKETCHPAD = {
     CLEAR: "清空",
     SAVE: "保存"
 };
+
+var LANG_EN_SKETCHPAD = window.LANG_EN_SKETCHPAD;
+var LANG_JP_SKETCHPAD = window.LANG_JP_SKETCHPAD;
+var LANG_KO_SKETCHPAD = window.LANG_KO_SKETCHPAD;
+var LANG_ZH_SKETCHPAD = window.LANG_ZH_SKETCHPAD;

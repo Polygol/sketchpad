@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title data-lang-key="TITLE">SketchPad</title>
-    <script src="lang.js">
+    <script src="lang.js"></script>
+    <script>
         // --- Internationalization (i18n) Support ---
         function getAppLanguage() {
             let l = (localStorage.getItem('language') || localStorage.getItem('selectedLanguage') || 'EN').toUpperCase();
@@ -45,9 +46,6 @@
                 const k = el.getAttribute('data-lang-title');
                 if (k) el.title = t(k);
             });
-            if (typeof onLanguageChanged === 'function') {
-                onLanguageChanged(lang);
-            }
         }
 
         window.addEventListener('message', (e) => {
@@ -56,8 +54,13 @@
             }
         });
 
-        window.addEventListener('DOMContentLoaded', () => applyLanguage());
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'language' || e.key === 'selectedLanguage') {
+                applyLanguage(e.newValue);
+            }
+        });
 
+        window.addEventListener('DOMContentLoaded', () => applyLanguage());
     </script>
     <link rel="icon" href="favicon.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
